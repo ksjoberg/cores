@@ -12,6 +12,7 @@
 #include "usb_midi.h"
 #include "usb_audio.h"
 #include "usb_mtp.h"
+#include "usb_ecm.h"
 #include "core_pins.h" // for delay()
 #include "avr/pgmspace.h"
 #include <string.h>
@@ -352,6 +353,7 @@ void usb_isr(void)
 	if (status & USB_USBSTS_UEI) {
 		//printf("error\n");
 	}
+
 	if ((USB1_USBINTR & USB_USBINTR_SRE) && (status & USB_USBSTS_SRI)) {
 		//printf("sof %d\n", usb_reboot_timer);
 		if (usb_reboot_timer) {
@@ -445,6 +447,9 @@ static void endpoint0_setup(uint64_t setupdata)
 		#endif
 		#if defined(ENDPOINT7_CONFIG)
 		USB1_ENDPTCTRL7 = ENDPOINT7_CONFIG;
+		#endif
+		#if defined(ECM_STATUS_INTERFACE)
+		usb_ecm_configure();
 		#endif
 		#if defined(CDC_STATUS_INTERFACE) && defined(CDC_DATA_INTERFACE)
 		usb_serial_configure();
@@ -568,6 +573,15 @@ static void endpoint0_setup(uint64_t setupdata)
 			}
 		}
 		break;
+#ifdef ECM_STATUS_INTERFACE
+	  case 0x4321: // SET_ETHERNET_PACKET_FILTER
+		if (setup.wIndex == ECM_STATUS_INTERFACE) {
+			endpoint0_receive(NULL, 0, 0); // Send ZLP
+			ecm_report(true);
+			return;
+		}
+		break;
+#endif
 #if defined(CDC_STATUS_INTERFACE)
 	  case 0x2221: // CDC_SET_CONTROL_LINE_STATE
 		#ifdef CDC_STATUS_INTERFACE
@@ -609,8 +623,9 @@ static void endpoint0_setup(uint64_t setupdata)
 		}
 		break;
 #endif
-#if defined(AUDIO_INTERFACE)
+#if defined(AUDIO_INTERFACE) || defined(ECM_STATUS_INTERFACE)
 	  case 0x0B01: // SET_INTERFACE (alternate setting)
+		#if defined(AUDIO_INTERFACE)
 		if (setup.wIndex == AUDIO_INTERFACE+1) {
 			usb_audio_transmit_setting = setup.wValue;
 			if (usb_audio_transmit_setting > 0) {
@@ -623,7 +638,17 @@ static void endpoint0_setup(uint64_t setupdata)
 			endpoint0_receive(NULL, 0, 0);
 			return;
 		}
+		#endif
+		#if defined(ECM_STATUS_INTERFACE)
+		if (setup.wIndex == ECM_DATA_INTERFACE) {
+			endpoint0_receive(NULL, 0, 0);
+			usb_ecm_interface_callback(setup.wValue);
+			return;
+		}
+		#endif
 		break;
+#endif
+#if defined(AUDIO_INTERFACE)
 	  case 0x0A81: // GET_INTERFACE (alternate setting)
 		if (setup.wIndex == AUDIO_INTERFACE+1) {
 			endpoint0_buffer[0] = usb_audio_transmit_setting;
@@ -760,6 +785,7 @@ static void endpoint0_complete(void)
 
 	setup.bothwords = endpoint0_setupdata.bothwords;
 	//printf("complete %x %x %x\n", setup.word1, setup.word2, endpoint0_buffer[0]);
+
 #ifdef CDC_STATUS_INTERFACE
 	// 0x2021 is CDC_SET_LINE_CODING
 	if (setup.wRequestAndType == 0x2021 && setup.wIndex == CDC_STATUS_INTERFACE) {

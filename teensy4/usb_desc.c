@@ -517,7 +517,21 @@ static uint8_t flightsim_report_desc[] = {
 //
 #define CONFIG_HEADER_DESCRIPTOR_SIZE	9
 
-#define CDC_IAD_DESCRIPTOR_POS		CONFIG_HEADER_DESCRIPTOR_SIZE
+#define ECM_IAD_DESCRIPTOR_POS		CONFIG_HEADER_DESCRIPTOR_SIZE
+#ifdef  ECM_IAD_DESCRIPTOR
+#define ECM_IAD_DESCRIPTOR_SIZE		8
+#else
+#define ECM_IAD_DESCRIPTOR_SIZE		0
+#endif
+
+#define ECM_DATA_INTERFACE_DESC_POS	ECM_IAD_DESCRIPTOR_POS + ECM_IAD_DESCRIPTOR_SIZE
+#ifdef  ECM_DATA_INTERFACE
+#define ECM_DATA_INTERFACE_DESC_SIZE	9+5+5+13+7+9+9+7+7
+#else
+#define ECM_DATA_INTERFACE_DESC_SIZE	0
+#endif
+
+#define CDC_IAD_DESCRIPTOR_POS          ECM_DATA_INTERFACE_DESC_POS + ECM_DATA_INTERFACE_DESC_SIZE
 #ifdef  CDC_IAD_DESCRIPTOR
 #define CDC_IAD_DESCRIPTOR_SIZE		8
 #else
@@ -663,6 +677,96 @@ PROGMEM const uint8_t usb_config_descriptor_480[CONFIG_DESC_SIZE] = {
         0,                                      // iConfiguration
         0xC0,                                   // bmAttributes
         50,                                     // bMaxPower
+
+#ifdef ECM_IAD_DESCRIPTOR
+        // interface association descriptor, USB ECN, Table 9-Z
+        8,                                      // bLength
+        11,                                     // bDescriptorType
+        ECM_STATUS_INTERFACE,                   // bFirstInterface
+        2,                                      // bInterfaceCount
+        0x02,                                   // bFunctionClass
+        0x06,                                   // bFunctionSubClass
+        0x00,                                   // bFunctionProtocol
+        0,                                      // iFunction
+#endif
+
+#ifdef ECM_DATA_INTERFACE
+	    // configuration for 480 Mbit/sec speed
+        // interface descriptor, USB spec 9.6.5, page 267-269, Table 9-12
+        9,                                      // bLength
+        4,                                      // bDescriptorType
+        ECM_STATUS_INTERFACE,			        // bInterfaceNumber
+        0,                                      // bAlternateSetting
+        1,                                      // bNumEndpoints
+        0x02,                                   // bInterfaceClass
+        0x06,                                   // bInterfaceSubClass
+        0x00,                                   // bInterfaceProtocol
+        0,                                      // iInterface
+        // CDC ECM Header Functional Descriptor, CDC Spec 5.2.3.1, Table 26
+        5,                                      // bFunctionLength
+        0x24,                                   // bDescriptorType
+        0x00,                                   // bDescriptorSubtype
+        0x20, 0x01,                             // bcdCDC
+        // Union Functional Descriptor, CDC Spec 5.2.3.8, Table 33
+        5,                                      // bFunctionLength
+        0x24,                                   // bDescriptorType
+        0x06,                                   // bDescriptorSubtype
+        ECM_STATUS_INTERFACE,                   // bMasterInterface
+        ECM_DATA_INTERFACE,                     // bSlaveInterface0
+        // Ethernet Networking Functional Descriptor, CDC Spec 5.2.3.2, Table 27
+        13,                                     // bFunctionLength
+        0x24,                                   // bDescriptorType
+        0x0F,                                   // bDescriptorSubtype
+        0x15,                                   // iMACAddress
+        0x00,                                   // bmEthernetStatistics[0]
+        0x00,                                   // bmEthernetStatistics[1]
+        0x00,                                   // bmEthernetStatistics[2]
+        0x00,                                   // bmEthernetStatistics[3]
+        LSB(ECM_MAX_SEGMENT_SIZE),MSB(ECM_MAX_SEGMENT_SIZE),     // wMaxSegmentSize
+        0x00, 0x00,                             // wMCFilters
+        0,                                      // bNumberPowerFilters
+        // endpoint descriptor, USB spec 9.6.6, page 269-271, Table 9-13
+        7,                                      // bLength
+        5,                                      // bDescriptorType
+        ECM_NOTIFY_ENDPOINT | 0x80,                // bEndpointAddress
+        0x03,                                   // bmAttributes (0x03=intr)
+        LSB(ECM_ACM_SIZE),MSB(ECM_ACM_SIZE),// wMaxPacketSize
+        0x05,                                   // bInterval
+        // interface descriptor, USB spec 9.6.5, page 267-269, Table 9-12
+        9,                                      // bLength
+        4,                                      // bDescriptorType
+        ECM_DATA_INTERFACE,                     // bInterfaceNumber
+        0,                                      // bAlternateSetting
+        0,                                      // bNumEndpoints
+        0x0A,                                   // bInterfaceClass
+        0x00,                                   // bInterfaceSubClass
+        0x00,                                   // bInterfaceProtocol
+        0,                                      // iInterface
+        // interface descriptor, USB spec 9.6.5, page 267-269, Table 9-12
+        9,                                      // bLength
+        4,                                      // bDescriptorType
+        ECM_DATA_INTERFACE,                     // bInterfaceNumber
+        1,                                      // bAlternateSetting
+        2,                                      // bNumEndpoints
+        0x0A,                                   // bInterfaceClass
+        0x00,                                   // bInterfaceSubClass
+        0x00,                                   // bInterfaceProtocol
+        0,                                      // iInterface
+        // endpoint descriptor, USB spec 9.6.6, page 269-271, Table 9-13
+        7,                                      // bLength
+        5,                                      // bDescriptorType
+        ECM_RX_ENDPOINT,                        // bEndpointAddress
+        0x02,                                   // bmAttributes (0x02=bulk)
+        LSB(ECM_RX_SIZE_480),MSB(ECM_RX_SIZE_480),// wMaxPacketSize
+        0,                                      // bInterval
+        // endpoint descriptor, USB spec 9.6.6, page 269-271, Table 9-13
+        7,                                      // bLength
+        5,                                      // bDescriptorType
+        ECM_TX_ENDPOINT | 0x80,               // bEndpointAddress
+        0x02,                                   // bmAttributes (0x02=bulk)
+        LSB(ECM_TX_SIZE_480),MSB(ECM_TX_SIZE_480),// wMaxPacketSize
+        0,                                      // bInterval
+#endif // ECM_DATA_INTERFACE
 
 #ifdef CDC_IAD_DESCRIPTOR
         // interface association descriptor, USB ECN, Table 9-Z
@@ -2709,6 +2813,10 @@ extern struct usb_string_descriptor_struct usb_string_product_name
         __attribute__ ((weak, alias("usb_string_product_name_default")));
 extern struct usb_string_descriptor_struct usb_string_serial_number
         __attribute__ ((weak, alias("usb_string_serial_number_default")));
+#ifdef ECM_DATA_INTERFACE
+extern struct usb_string_descriptor_struct usb_string_mac_address
+        __attribute__ ((weak, alias("usb_string_mac_address_default")));
+#endif
 
 PROGMEM const struct usb_string_descriptor_struct string0 = {
         4,
@@ -2731,6 +2839,13 @@ struct usb_string_descriptor_struct usb_string_serial_number_default = {
         3,
         {0,0,0,0,0,0,0,0,0,0}
 };
+#ifdef ECM_DATA_INTERFACE
+struct usb_string_descriptor_struct usb_string_mac_address_default = {
+        2 + 12 * 2,
+        3,
+        {'0','0','0','0','0','0','0','0','0','0'}
+};
+#endif
 #ifdef MTP_INTERFACE
 PROGMEM const struct usb_string_descriptor_struct usb_string_mtp = {
 	2 + 3 * 2,
@@ -2754,6 +2869,33 @@ void usb_init_serialnumber(void)
 		usb_string_serial_number_default.wString[i] = c;
 	}
 	usb_string_serial_number_default.bLength = i * 2 + 2;
+
+#ifdef ECM_DATA_INTERFACE
+        for (i=0; i<6; i++) {
+                char b;
+                if (i == 0)
+                {
+                        b = (HW_OCOTP_MAC1 >> 8) & 0xFE;
+                } else if (i == 1)
+                {
+                        b = HW_OCOTP_MAC1 >> 0;
+                } else if (i == 2)
+                {
+                        b = HW_OCOTP_MAC0 >> 24;
+                } else if (i == 3)
+                {
+                        b = HW_OCOTP_MAC0 >> 16;
+                } else if (i == 4)
+                {
+                        b = HW_OCOTP_MAC0 >> 8;
+                } else if (i == 5)
+                {
+                        b = HW_OCOTP_MAC0;
+                } 
+                usb_string_mac_address_default.wString[i*2] = "0123456789ABCDEF"[b >> 4];
+                usb_string_mac_address_default.wString[i*2 + 1] = "0123456789ABCDEF"[b & 0xf];
+        }
+#endif
 }
 
 
@@ -2803,6 +2945,9 @@ const usb_descriptor_list_t usb_descriptor_list[] = {
 #endif
 #ifdef MTP_INTERFACE
 	{0x0304, 0x0409, (const uint8_t *)&usb_string_mtp, 0},
+#endif
+#ifdef ECM_DATA_INTERFACE
+        {0x0315, 0x0409, (const uint8_t *)&usb_string_mac_address, 0},
 #endif
         {0x0300, 0x0000, (const uint8_t *)&string0, 0},
         {0x0301, 0x0409, (const uint8_t *)&usb_string_manufacturer_name, 0},

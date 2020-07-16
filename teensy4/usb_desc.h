@@ -111,9 +111,79 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
 */
 
 
-#if defined(USB_SERIAL)
+#if defined(USB_ECM)
+  #define VENDOR_ID		0x16C0
+  #define PRODUCT_ID		0x2483
+  #define DEVICE_CLASS		0xEF
+  #define DEVICE_SUBCLASS	0x04
+  #define DEVICE_PROTOCOL	0x01
+  #define MANUFACTURER_NAME	{'T','e','e','n','s','y','d','u','i','n','o'}
+  #define MANUFACTURER_NAME_LEN	11
+  #define PRODUCT_NAME		{'U','S','B',' ','E','t','h','e','r','n','e','t'}
+  #define PRODUCT_NAME_LEN	12
+  #define EP0_SIZE		64
+  #define NUM_ENDPOINTS		4
+  #define NUM_USB_BUFFERS	12
+  #define NUM_INTERFACE		2
+  #define ECM_STATUS_INTERFACE	0
+  #define ECM_DATA_INTERFACE	1
+  #define ECM_NOTIFY_ENDPOINT	2
+  #define ECM_RX_ENDPOINT       3
+  #define ECM_TX_ENDPOINT       4
+  #define ECM_MAX_SEGMENT_SIZE  1514
+  #define ECM_ACM_SIZE          16
+  #define ECM_RX_SIZE_480       512
+  #define ECM_TX_SIZE_480       512
+  #define ECM_RX_SIZE_12        64
+  #define ECM_TX_SIZE_12        64
+  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_INTERRUPT
+  #define ENDPOINT3_CONFIG	ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_UNUSED
+  #define ENDPOINT4_CONFIG      ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_BULK
+
+#elif defined(USB_ECM_SERIAL)
+  #define VENDOR_ID		0x16C0
+  #define PRODUCT_ID		0x2483
+  #define MANUFACTURER_NAME	{'T','e','e','n','s','y','d','u','i','n','o'}
+  #define MANUFACTURER_NAME_LEN	11
+  #define PRODUCT_NAME		{'U','S','B',' ','E','t','h','e','r','S','e','r'}
+  #define PRODUCT_NAME_LEN	12
+  #define EP0_SIZE		64
+  #define NUM_ENDPOINTS		6
+  #define NUM_USB_BUFFERS	12
+  #define NUM_INTERFACE		4
+  #define ECM_IAD_DESCRIPTOR  1
+  #define ECM_STATUS_INTERFACE	0
+  #define ECM_DATA_INTERFACE	1
+  #define ECM_NOTIFY_ENDPOINT	2
+  #define ECM_RX_ENDPOINT       3
+  #define ECM_TX_ENDPOINT       4
+  #define ECM_MAX_SEGMENT_SIZE  1514
+  #define ECM_ACM_SIZE          16
+  #define ECM_RX_SIZE_480       512
+  #define ECM_TX_SIZE_480       512
+  #define ECM_RX_SIZE_12        64
+  #define ECM_TX_SIZE_12        64
+  #define CDC_IAD_DESCRIPTOR    1       // Serial
+  #define CDC_STATUS_INTERFACE  2
+  #define CDC_DATA_INTERFACE  3
+  #define CDC_ACM_ENDPOINT  5
+  #define CDC_RX_ENDPOINT       6
+  #define CDC_TX_ENDPOINT       6
+  #define CDC_ACM_SIZE          16
+  #define CDC_RX_SIZE_480       512
+  #define CDC_TX_SIZE_480       512
+  #define CDC_RX_SIZE_12        64
+  #define CDC_TX_SIZE_12        64
+  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_INTERRUPT
+  #define ENDPOINT3_CONFIG	ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_UNUSED
+  #define ENDPOINT4_CONFIG  ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_BULK
+  #define ENDPOINT5_CONFIG  ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_INTERRUPT
+  #define ENDPOINT6_CONFIG  ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_BULK
+
+#elif defined(USB_SERIAL)
   #define VENDOR_ID		0x16C0
   #define PRODUCT_ID		0x0483
+  #define DEVICE_CLASS		2	// 2 = Communication Class
   #define MANUFACTURER_NAME	{'T','e','e','n','s','y','d','u','i','n','o'}
   #define MANUFACTURER_NAME_LEN	11
   #define PRODUCT_NAME		{'U','S','B',' ','S','e','r','i','a','l'}
