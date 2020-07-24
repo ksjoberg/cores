@@ -353,7 +353,6 @@ void usb_isr(void)
 	if (status & USB_USBSTS_UEI) {
 		//printf("error\n");
 	}
-	check_rndis_irq();
 
 	if ((USB1_USBINTR & USB_USBINTR_SRE) && (status & USB_USBSTS_SRI)) {
 		//printf("sof %d\n", usb_reboot_timer);
