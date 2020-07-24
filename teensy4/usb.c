@@ -572,7 +572,7 @@ static void endpoint0_setup(uint64_t setupdata)
 			}
 		}
 		break;
-#if USB_RNDIS
+#ifdef RNDIS_STATUS_INTERFACE
 	  case 0x0021: // SEND_ENCAPSULATED_COMMAND
 	  {
 		      endpoint0_setupdata.bothwords = setup.bothwords;
@@ -590,6 +590,7 @@ static void endpoint0_setup(uint64_t setupdata)
 			  endpoint0_transmit(encapsulated_buffer, encapsulated_buffer[1], 0);
 			  data_to_send = false;
 		  } else {
+			  // send single zero instead of stalling
 			  encapsulated_buffer[0] = 0;
 			  arm_dcache_flush_delete(encapsulated_buffer, 1);
 			  endpoint0_transmit(encapsulated_buffer, 1, 0);
